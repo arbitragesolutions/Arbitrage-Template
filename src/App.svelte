@@ -57,6 +57,24 @@
   let videoOpen = $state(false)
   let selectedVideo = $state('')
   let scrolled = $state(false)
+  let language = $state('en')
+  const originalText = new Map()
+  const translations = {
+    'Сканеры': 'Scanners', 'Возможности': 'Features', 'Тарифы': 'Pricing', 'Войти': 'Log in', 'Начать': 'Get started', 'Начать сканировать': 'Start scanning',
+    'Межбиржевой': 'Cross-exchange', 'Фьючерсный': 'Futures', 'Всё включено': 'All access', 'Для спокойного старта': 'For a calm start', 'Больше возможностей': 'More possibilities', 'Охват децентрализованных рынков': 'Decentralized markets', 'Максимум контроля': 'Maximum control',
+    'Spot–spot сканер': 'Spot–spot scanner', 'Фьючерсы и funding': 'Futures and funding', 'Хеджирование': 'Hedging', 'Telegram-сигналы': 'Telegram alerts', 'Проверка газа': 'Gas checks', 'Все сканеры': 'All scanners', 'Авто-арбитраж': 'Auto arbitrage', 'Приоритетная поддержка': 'Priority support',
+    'Уже используют 1 000+ трейдеров': 'Already used by 1,000+ traders', 'Находи арбитражные': 'Find arbitrage', 'спреды': 'spreads', 'быстрее рынка': 'faster than the market', 'Попробовать сканер': 'Try the scanner', 'Смотреть демо': 'Watch demo', 'ДАННЫЕ С ВЕДУЩИХ БИРЖ': 'DATA FROM LEADING EXCHANGES',
+    'Рынок, ': 'The market, ', 'разложенный': 'laid out', 'по полочкам': 'clearly', 'Демо-лента показывает, как быстро находить маршрут с положительным чистым спредом.': 'A live demo feed shows how quickly to find a route with a positive net spread.', 'Данные обновляются': 'Data is updating',
+    'Сумма': 'Amount', 'Мин. спред': 'Min. spread', 'Биржа': 'Exchange', 'Все биржи': 'All exchanges', 'Только сеть доступна': 'Network available', 'Демо-данные. Не является торговой рекомендацией.': 'Demo data. Not trading advice.', 'Монета': 'Asset', 'Купить на': 'Buy on', 'Продать на': 'Sell on', 'Цена покупки': 'Buy price', 'Цена продажи': 'Sell price', 'Чистый спред': 'Net spread', 'Объём': 'Volume', 'Перевод': 'Transfer',
+    'Один рынок.': 'One market.', 'Четыре': 'Four', 'сценария.': 'scenarios.', 'Выберите тип арбитража и смотрите только те возможности, которые подходят вашей стратегии.': 'Choose an arbitrage type and focus only on opportunities that fit your strategy.', 'Подробнее': 'Learn more',
+    'Инструменты для ': 'Tools for ', 'ясных': 'clear', 'решений': 'decisions', 'Меньше ручной рутины. Больше контекста вокруг каждой возможности.': 'Less manual work. More context around every opportunity.',
+    'Видь не только': 'See more than the', 'цифру': 'number', 'но и риск': 'risk', 'Данные из': 'Data from the', 'глубины': 'depth', 'рынка': 'of the market', 'Исследовать DEX': 'Explore DEX',
+    'От сигнала к действию —': 'From signal to action —', 'под твоим контролем': 'under your control', 'Спред достиг 1.2%': 'Spread reached 1.2%', 'Открытие позиций': 'Open positions', 'Закрытие при 0.4%': 'Close at 0.4%',
+    'Спреды приходят': 'Spreads arrive', 'сами': 'by themselves', 'Открыть бота': 'Open the bot', 'Пять минут до ': 'Five minutes to your ', 'первого': 'first', 'сигнала': 'signal', 'Все материалы': 'All materials',
+    'Выбери свой': 'Choose your', 'темп': 'pace', 'арбитража': 'of arbitrage', 'Начните с одного сценария и расширяйтесь, когда появится уверенность.': 'Start with one scenario and expand when you are ready.', '1 месяц': '1 month', '3 месяца': '3 months', '12 месяцев': '12 months', 'Выгодно': 'Best value', 'Выбрать план': 'Choose plan',
+    'Осталось': 'Still have', 'уточнить?': 'questions?', 'Честно отвечаем о возможностях, ограничениях и рисках.': 'Honest answers about features, limitations, and risk.', 'Вернуться к началу': 'Back to top', 'Поймаешь следующий': 'Will you catch the next', 'спред?': 'spread?', 'Начать сейчас': 'Start now', 'Telegram-канал': 'Telegram channel', 'Telegram поддержки': 'Support on Telegram', 'Политика': 'Privacy', 'Условия': 'Terms',
+    'Здесь появится видео': 'The video will appear here', 'подключить реальную ссылку на Telegram-бота': 'connect the real Telegram bot link', 'заменить демо-цены на актуальные условия тарифа и подключить оплату': 'replace demo prices with real plan terms and connect payments'
+  }
 
   const scannerTypes = {
     'Межбиржевой': { icon: '↗', title: 'Спот–спот', text: 'Классический маршрут: купить дешевле на одной бирже и продать дороже на другой.', points: ['Чистый спред после комиссий', 'Проверка сети перевода', 'Расчёт рабочего объёма'] },
@@ -76,13 +94,29 @@
     return () => { window.clearInterval(timer); window.removeEventListener('scroll', onScroll) }
   })
 
+  $effect(() => {
+    language
+    document.documentElement.lang = language
+    const nodes = []
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    let node
+    while ((node = walker.nextNode())) {
+      if (!originalText.has(node)) originalText.set(node, node.nodeValue)
+      nodes.push(node)
+    }
+    nodes.forEach((textNode) => {
+      const source = originalText.get(textNode) || ''
+      textNode.nodeValue = language === 'en' ? Object.entries(translations).sort((a, b) => b[0].length - a[0].length).reduce((value, [from, to]) => value.replaceAll(from, to), source) : source
+    })
+  })
+
   function goTo(href) { mobileOpen = false; document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' }) }
   function showVideo(title) { selectedVideo = title; videoOpen = true }
 </script>
 
 <svelte:head>
-  <title>Arbitrage Bro Scan — сканер криптоарбитража</title>
-  <meta name="description" content="Arbitrage Bro Scan помогает находить криптоарбитражные спреды между биржами, DEX и фьючерсами в реальном времени." />
+  <title>Arbitrage Bro Scan — crypto arbitrage scanner</title>
+  <meta name="description" content="Arbitrage Bro Scan helps find crypto arbitrage spreads across exchanges, DEXs and futures in real time." />
   <meta property="og:title" content="Arbitrage Bro Scan — следующий спред ближе, чем кажется" />
   <meta property="og:description" content="Мониторинг спредов, ликвидности и комиссий в одном пространстве." />
 </svelte:head>
@@ -90,7 +124,7 @@
 <header class:scrolled class="topbar">
   <a class="brand" href="#top" onclick={(event) => { event.preventDefault(); goTo('#top') }}><span class="brand-mark"><ArrowUpRight size={18} /></span><span>Arbitrage Bro <b>Scan</b></span></a>
   <nav class="desktop-nav" aria-label="Основная навигация">{#each navLinks as link}<a href={link.href} onclick={(event) => { event.preventDefault(); goTo(link.href) }}>{link.label}</a>{/each}</nav>
-  <div class="nav-actions"><a class="login-link" href="#pricing">Войти</a><a class="button button-small" href="#pricing">Начать <ArrowRight size={15} /></a><button class="menu-button" aria-label="Открыть меню" aria-expanded={mobileOpen} onclick={() => mobileOpen = !mobileOpen}>{#if mobileOpen}<X size={21} />{:else}<Menu size={21} />{/if}</button></div>
+  <div class="nav-actions"><button class="language-toggle" aria-label="Switch language" onclick={() => language = language === 'en' ? 'ru' : 'en'}>{language === 'en' ? 'RU' : 'EN'}</button><a class="login-link" href="#pricing">Войти</a><a class="button button-small" href="#pricing">Начать <ArrowRight size={15} /></a><button class="menu-button" aria-label="Открыть меню" aria-expanded={mobileOpen} onclick={() => mobileOpen = !mobileOpen}>{#if mobileOpen}<X size={21} />{:else}<Menu size={21} />{/if}</button></div>
   {#if mobileOpen}<div class="mobile-menu">{#each navLinks as link}<a href={link.href} onclick={(event) => { event.preventDefault(); goTo(link.href) }}>{link.label}<ArrowRight size={16} /></a>{/each}<a class="button" href="#pricing" onclick={() => mobileOpen = false}>Начать сканировать</a></div>{/if}
 </header>
 
